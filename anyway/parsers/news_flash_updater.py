@@ -1,12 +1,11 @@
 import logging
 
-from anyway.parsers.location_extraction import manual_filter_location_of_text
+from anyway.parsers.location_extraction import manual_filter_location_of_text, \
+    geocode_extract, get_db_matching_location, set_accident_resolution
 from anyway.parsers.news_flash_classifiers import classify_news_flash, classify_tweets
-from anyway.parsers.news_flash_parser import get_all_news_flash_data_for_updates, update_news_flash_bulk
-from anyway.parsers.news_flash.scrape_rss_html import extract_geo_features
+from anyway.parsers.news_flash_parser import get_all_news_flash_data_for_updates, \
+    update_news_flash_bulk
 
-
-# TODO: add to site_configs
 news_flash_classifiers = {'ynet': classify_news_flash,
                           'twitter': classify_tweets,
                           'walla': classify_news_flash}
@@ -26,7 +25,21 @@ def update_news_flash(maps_key, news_flash_data, bulk_size=100):
             if accident:
                 location = manual_filter_location_of_text(item_data)
                 if location != old_location:
-                    extract_geo_features(news_item, maps_key)
+                    news_item['location'] = location
+                    geo_location = geocode_extract(location, maps_key)
+                    if geo_location is None:
+                        news_item['lat'] = None
+                        news_item['lon'] = None
+                    else:
+                        news_item['lat'] = geo_location['geom']['lat']
+                        news_item['lon'] = geo_location['geom']['lng']
+                        news_item['resolution'] = set_accident_resolution(geo_location)
+                        db_location = get_db_matching_location(news_item['lat'], news_item['lon'],
+                                                               news_item['resolution'], geo_location['road_no'])
+                        for col in ['region_hebrew', 'district_hebrew', 'yishuv_name', 'street1_hebrew',
+                                    'street2_hebrew',
+                                    'non_urban_intersection_hebrew', 'road1', 'road2', 'road_segment_name']:
+                            news_item[col] = db_location[col]
             else:
                 news_item['lat'] = None
                 news_item['lon'] = None
