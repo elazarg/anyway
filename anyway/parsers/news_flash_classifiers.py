@@ -35,7 +35,6 @@ def tweet_with_veichles(text):
     return False
 
 
-
 def classify_tweets(text):
     """
     classify tweets for tweets about car accidents and others
@@ -45,9 +44,9 @@ def classify_tweets(text):
     return text.startswith(u'בשעה') and (tweet_with_accident_veichle_and_person(text) or tweet_with_car_accident(text) or tweet_with_veichles(text))
 
 
-def classify_ynet(text):
+def classify_news_flash(text):
     """
-    classify ynet news flash for news flash about car accidents and others
+    classify whether this news flash is about car accidents and others
     :param text: news flash text
     :return: boolean, true if news flash is about car accident, false for others
     """
